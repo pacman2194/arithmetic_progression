@@ -29,20 +29,20 @@ fn is_integer(s: String) -> Result<(), String> {
     }
 }
 
-fn steps(s: isize, e: isize, d: isize) -> Result<isize, InvalidSeries> {
-    if d == 0 {
+fn term_count(start: isize, end: isize, difference: isize) -> Result<isize, InvalidSeries> {
+    if difference == 0 {
         Err(InvalidSeries)
     } else {
-        if (e - s) % d != 0 {
+        if (end - start) % difference != 0 {
             Err(InvalidSeries)
         } else {
-            Ok((e - s) / d)
+            Ok((end - start) / difference + 1)
         }
     }
 }
 
-fn sum(s: isize, d: isize, t: isize) -> isize {
-    return ((t + 1) * s) + ((d * t * (t + 1)) / 2);
+fn sum(start: isize, difference: isize, terms: isize) -> isize {
+    return (terms * start) + ((difference * (terms - 1) * (terms)) / 2);
 }
 
 fn main() {
@@ -96,31 +96,30 @@ fn main() {
         )
         .get_matches();
 
-    let s = matches.value_of("start").unwrap();
-    let d = matches.value_of("difference").unwrap();
+    let start = matches.value_of("start").unwrap();
+    let difference = matches.value_of("difference").unwrap();
 
-    if matches.is_present("end") && s == matches.value_of("end").unwrap() && d == "0" {
-        println!("{}", s);
+    if matches.is_present("end") && start == matches.value_of("end").unwrap() && difference == "0" {
+        println!("{}", start);
         return;
     }
 
-    let s: isize = s.parse().unwrap();
-    let d: isize = d.parse().unwrap();
+    let start: isize = start.parse().unwrap();
+    let difference: isize = difference.parse().unwrap();
 
-    let t: isize = if matches.is_present("end") {
-        let e: isize = matches.value_of("end").unwrap().parse().unwrap();
-        let t = match steps(s, e, d) {
+    let terms: isize = if matches.is_present("end") {
+        let end: isize = matches.value_of("end").unwrap().parse().unwrap();
+        match term_count(start, end, difference) {
             Ok(s) => s,
             Err(error) => {
                 eprintln!("{}", error);
                 std::process::exit(0x01);
             }
-        };
-        t
+        }
     } else {
         matches.value_of("terms").unwrap().parse().unwrap()
     };
 
-    println!("{}", sum(s, d, t));
+    println!("{}", sum(start, difference, terms));
     return;
 }
