@@ -36,7 +36,12 @@ fn term_count(start: isize, end: isize, difference: isize) -> Result<isize, Inva
         if (end - start) % difference != 0 {
             Err(InvalidSeries)
         } else {
-            Ok((end - start) / difference + 1)
+            let terms = (end - start) / difference + 1;
+            if terms > 0 {
+                Ok(terms)
+            } else {
+                Err(InvalidSeries)
+            }
         }
     }
 }
