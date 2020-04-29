@@ -21,33 +21,29 @@ fn is_integer(s: String) -> Result<(), String> {
         static ref RE: Regex = Regex::new(r"^[-]?[\d]+$").unwrap();
     }
     if RE.is_match(&s) {
-        return Ok(());
+        Ok(())
     } else {
-        return Err(String::from(
+        Err(String::from(
             "All arguments that take values must be of type isize.",
-        ));
+        ))
     }
 }
 
 fn term_count(start: isize, end: isize, difference: isize) -> Result<isize, InvalidSeries> {
-    if difference == 0 {
+    if difference == 0 || (end - start) % difference != 0 {
         Err(InvalidSeries)
     } else {
-        if (end - start) % difference != 0 {
-            Err(InvalidSeries)
+        let terms = (end - start) / difference + 1;
+        if terms > 0 {
+            Ok(terms)
         } else {
-            let terms = (end - start) / difference + 1;
-            if terms > 0 {
-                Ok(terms)
-            } else {
-                Err(InvalidSeries)
-            }
+            Err(InvalidSeries)
         }
     }
 }
 
 fn sum(start: isize, difference: isize, terms: isize) -> isize {
-    return (terms * start) + ((difference * (terms - 1) * (terms)) / 2);
+    (terms * start) + ((difference * (terms - 1) * (terms)) / 2)
 }
 
 fn main() {
@@ -126,5 +122,4 @@ fn main() {
     };
 
     println!("{}", sum(start, difference, terms));
-    return;
 }
