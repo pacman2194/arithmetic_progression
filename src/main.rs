@@ -1,51 +1,126 @@
-use std::env;
+#[macro_use]
+extern crate lazy_static;
+use clap::{App, Arg};
+use regex::Regex;
 use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-pub struct DivisionByZero;
+pub struct InvalidSeries;
 
-impl fmt::Display for DivisionByZero {
+impl fmt::Display for InvalidSeries {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "Division by zero is not allowed!")
+        write!(fmt, "The arguments provided do not form a valid series.")
     }
 }
 
-impl Error for DivisionByZero {}
+impl Error for InvalidSeries {}
 
-fn steps(n: i32, m: i32, d: i32) -> Result<i32, DivisionByZero> {
-    if d == 0 {
-        return Err(DivisionByZero);
+fn is_integer(s: String) -> Result<(), String> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"^[-]?[\d]+$").unwrap();
+    }
+    if RE.is_match(&s) {
+        return Ok(());
     } else {
-        return Ok((m - n) / d);
+        return Err(String::from(
+            "All arguments that take values must be of type isize.",
+        ));
     }
 }
 
-fn sum(n: i32, d: i32, s: i32) -> i32 {
-    return ( (s + 1) * n ) + ((d * s * (s + 1)) / 2);
+fn steps(s: isize, e: isize, d: isize) -> Result<isize, InvalidSeries> {
+    if d == 0 {
+        Err(InvalidSeries)
+    } else {
+        if (e - s) % d != 0 {
+            Err(InvalidSeries)
+        } else {
+            Ok((e - s) / d)
+        }
+    }
+}
+
+fn sum(s: isize, d: isize, t: isize) -> isize {
+    return ((t + 1) * s) + ((d * t * (t + 1)) / 2);
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let matches = App::new("Calculate Reasonable Arithmetic Progression")
+        .version("0.1")
+        .author("Drake P. <drake.packard@zoho.com>")
+        .about("Calculate arithmetic progressions with rust")
+        .arg(
+            Arg::with_name("start")
+                .help("The starting number")
+                .short("s")
+                .long("start")
+                .takes_value(true)
+                .validator(is_integer)
+                .allow_hyphen_values(true)
+                .required(true)
+                .requires("termination"),
+        )
+        .arg(
+            Arg::with_name("end")
+                .help("The ending number")
+                .short("e")
+                .long("end")
+                .takes_value(true)
+                .validator(is_integer)
+                .allow_hyphen_values(true)
+                .required(false)
+                .group("termination"),
+        )
+        .arg(
+            Arg::with_name("difference")
+                .help("The difference between each term")
+                .short("d")
+                .long("difference")
+                .takes_value(true)
+                .validator(is_integer)
+                .allow_hyphen_values(true)
+                .required(false)
+                .default_value("1"),
+        )
+        .arg(
+            Arg::with_name("terms")
+                .short("t")
+                .long("terms")
+                .help("The number of terms in the progression")
+                .takes_value(true)
+                .validator(is_integer)
+                .allow_hyphen_values(true)
+                .required(false)
+                .group("termination"),
+        )
+        .get_matches();
 
-    let (a, z, d): (i32, i32, i32) = match args.len() {
-        3 => (args[1].parse().unwrap(), args[2].parse().unwrap(), 1),
-        4 => (args[1].parse().unwrap(), args[2].parse().unwrap(), args[3].parse().unwrap()),
-        _ => panic!("This program requires 2 or 3 arguments."),
-    };
+    let s = matches.value_of("start").unwrap();
+    let d = matches.value_of("difference").unwrap();
 
-    if a == z {
-        println!("{}", a);
+    if matches.is_present("end") && s == matches.value_of("end").unwrap() && d == "0" {
+        println!("{}", s);
         return;
     }
 
-    let step = match steps(a,z,d) {
-        Ok(s) => s,
-        Err(error) => panic!(error),
+    let s: isize = s.parse().unwrap();
+    let d: isize = d.parse().unwrap();
+
+    let t: isize = if matches.is_present("end") {
+        let e: isize = matches.value_of("end").unwrap().parse().unwrap();
+        let t = match steps(s, e, d) {
+            Ok(s) => s,
+            Err(error) => {
+                eprintln!("{}", error);
+                std::process::exit(0x01);
+            }
+        };
+        t
+    } else {
+        matches.value_of("terms").unwrap().parse().unwrap()
     };
 
-    let sumb = sum(a,d,step);
-
-    println!("{}", sumb);
+    println!("{}", sum(s, d, t));
     return;
 }
